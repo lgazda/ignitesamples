@@ -48,12 +48,12 @@ public class IgniteContinuousQueryWithFilter {
         startContinuousQueryWithFilter(false, igniteServer1);
         streamSomeDataWithIndexRange(igniteClient, 0, 1_000_000);
 
-        sleep(60_000);
+        sleep(120_000);
         System.gc();
 
 
         /* Brake point here and check memory
-           com.intellij.debugger.memory.ui.JavaTypeInfo@1290	shows 126755 CacheContinuousQueryEntry
+           com.intellij.debugger.memory.ui.JavaTypeInfo@1290	shows 1277988 CacheContinuousQueryEntry
         */
         closeIgnites(igniteClient, igniteServer1, igniteServer2, igniteServer3);
     }
