@@ -36,7 +36,7 @@ public class IgniteContinuousQueryWithFilter {
     private static final String SAMPLE_CACHE_NAME = "TestCache";
 
     @Test
-    public void startContinuousQueryWithFilterOnlyOneOneNodeLocalQueryFalse() {
+    public void startContinuousQueryWithFilterOnlyOnOneNode_StartNodesAtOnce_LocalQueryFalse() {
 
         Ignite igniteServer1 = startIgniteServer("server1");
         Ignite igniteServer2 = startIgniteServer("server2");
@@ -45,10 +45,10 @@ public class IgniteContinuousQueryWithFilter {
         Ignite igniteClient = startIgniteClient("client");
 
         //initial cluster
-        startContinuousQueryWithFilter(false, igniteServer1);
-        streamSomeDataWithIndexRange(igniteClient, 0, 1_000_000);
+        startContinuousQueryForLocalQueryAndFilterValue(false, true, igniteServer1);
+        streamSomeDataWithIndexRange(igniteClient, 0, 2);
 
-        sleep(120_000);
+       // sleep(120_000);
         System.gc();
 
 
@@ -59,7 +59,7 @@ public class IgniteContinuousQueryWithFilter {
     }
 
     @Test
-    public void startContinuousQueryWithFilterOnAllNodesLocalQueryTrue() {
+    public void startContinuousQueryWithFilterOnlyOnOneNode_StartNodesAtOnce_LocalQueryTrue() {
 
         Ignite igniteServer1 = startIgniteServer("server1");
         Ignite igniteServer2 = startIgniteServer("server2");
@@ -68,10 +68,37 @@ public class IgniteContinuousQueryWithFilter {
         Ignite igniteClient = startIgniteClient("client");
 
         //initial cluster
-        startContinuousQueryWithFilter(true, igniteServer1, igniteServer2, igniteServer3);
-        streamSomeDataWithIndexRange(igniteClient, 0, 1_000_000);
+        startContinuousQueryForLocalQueryAndFilterValue(true, true, igniteServer1);
+        streamSomeDataWithIndexRange(igniteClient, 0, 2);
 
-        sleep(30_000);
+        // sleep(120_000);
+        System.gc();
+
+
+        /* Brake point here and check memory
+           com.intellij.debugger.memory.ui.JavaTypeInfo@1290	shows 1277988 CacheContinuousQueryEntry
+        */
+        closeIgnites(igniteClient, igniteServer1, igniteServer2, igniteServer3);
+    }
+
+    @Test
+    public void startContinuousQueryWithFilterOnlyOnOneNode_StartNodesIncrementally_LocalQueryFalse() {
+
+        Ignite igniteServer1 = startIgniteServer("server1");
+        Ignite igniteServer2 = startIgniteServer("server2");
+
+        Ignite igniteClient = startIgniteClient("client");
+
+        //initial cluster
+        startContinuousQueryForLocalQueryAndFilterValue(false, true, igniteServer1);
+        streamSomeDataWithIndexRange(igniteClient, 0, 1);
+
+        Ignite igniteServer3 = startIgniteServer("server3");
+
+        //sleep(30_000);
+        streamSomeDataWithIndexRange(igniteClient, 1, 2);
+
+        //sleep(30_000);
         System.gc();
 
         /* Brake point here and check memory
@@ -81,7 +108,29 @@ public class IgniteContinuousQueryWithFilter {
     }
 
     @Test
-    public void startContinuousQueryWithFilterOnAllNodesStartNodesIncLocalQueryTrue() {
+    public void startContinuousQueryWithFilterOnAllNodes_StartNodesAtOnce_LocalQueryTrue() {
+
+        Ignite igniteServer1 = startIgniteServer("server1");
+        Ignite igniteServer2 = startIgniteServer("server2");
+        Ignite igniteServer3 = startIgniteServer("server3");
+
+        Ignite igniteClient = startIgniteClient("client");
+
+        //initial cluster
+        startContinuousQueryForLocalQueryAndFilterValue(true, true, igniteServer1, igniteServer2, igniteServer3);
+        streamSomeDataWithIndexRange(igniteClient, 0, 2);
+
+        //sleep(30_000);
+        System.gc();
+
+        /* Brake point here and check memory
+           com.intellij.debugger.memory.ui.JavaTypeInfo@1290	shows 1 CacheContinuousQueryEntry
+        */
+        closeIgnites(igniteClient, igniteServer1, igniteServer2, igniteServer3);
+    }
+
+    @Test
+    public void startContinuousQueryWithFilterOnAllNodes_StartNodesIncrementally_LocalQueryTrue() {
 
         Ignite igniteServer1 = startIgniteServer("server1");
         Ignite igniteServer2 = startIgniteServer("server2");
@@ -89,16 +138,16 @@ public class IgniteContinuousQueryWithFilter {
         Ignite igniteClient = startIgniteClient("client");
 
         //initial cluster
-        startContinuousQueryWithFilter(true, igniteServer1, igniteServer2);
-        streamSomeDataWithIndexRange(igniteClient, 0, 100_000);
+        startContinuousQueryForLocalQueryAndFilterValue(true, true, igniteServer1, igniteServer2);
+        streamSomeDataWithIndexRange(igniteClient, 0, 1);
 
         Ignite igniteServer3 = startIgniteServer("server3");
-        startContinuousQueryWithFilter(true, igniteServer3);
+        startContinuousQueryForLocalQueryAndFilterValue(true, true, igniteServer3);
 
-        sleep(30_000);
-        streamSomeDataWithIndexRange(igniteClient, 0, 900_000);
+        //sleep(30_000);
+        streamSomeDataWithIndexRange(igniteClient, 1, 2);
 
-        sleep(30_000);
+        //sleep(30_000);
         System.gc();
 
         /* Brake point here and check memory
@@ -115,7 +164,7 @@ public class IgniteContinuousQueryWithFilter {
         }
     }
 
-    private static List<ContinuousQuery<Integer, LocalDateTime>> startContinuousQueryWithFilter(boolean localQuery, Ignite... ignites) {
+    private static List<ContinuousQuery<Integer, LocalDateTime>> startContinuousQueryForLocalQueryAndFilterValue(boolean localQuery, boolean filterValue, Ignite... ignites) {
         return Stream.of(ignites)
                 .map(ignite -> {
                     Factory<CacheEntryEventFilter<Integer, LocalDateTime>> cacheEntryEventFilterFactory = () -> new CacheEntryEventFilter<Integer, LocalDateTime>() {
@@ -124,15 +173,17 @@ public class IgniteContinuousQueryWithFilter {
 
                         @Override
                         public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends LocalDateTime> cacheEntryEvent) throws CacheEntryListenerException {
-                            //System.out.println("Node: " +  ignite.name() + " key: " + cacheEntryEvent.getKey());
-                            return false;
+                            System.out.println("Node: " +  ignite.name() + " filter key: " + cacheEntryEvent.getKey());
+                            return filterValue;
                         }
                     };
 
                     ContinuousQuery<Integer, LocalDateTime> continuousQuery = new ContinuousQuery<>();
                     continuousQuery.setAutoUnsubscribe(false).setLocal(localQuery)
                             .setRemoteFilterFactory(cacheEntryEventFilterFactory)
-                            .setLocalListener(events -> {});
+                            .setLocalListener(events -> events.forEach(event -> {
+                                System.out.println("Node: " +  ignite.name() + " event key: " + event.getKey());
+                            }));
 
                     getSampleCache(ignite).query(continuousQuery);
                     return continuousQuery;
