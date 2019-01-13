@@ -10,6 +10,10 @@
 
     <Loggers>
 
+        <Logger name="IgniteContinuousQueryTest" level="INFO" additivity="false">
+            <AppenderRef ref="ListenerLogFile"/>
+        </Logger>
+
         <Root level="INFO">
             <AppenderRef ref="MainLogFile" />
             <AppenderRef ref="Console" />
@@ -24,6 +28,13 @@
             <PatternLayout pattern="${sd:patternLayout}"/>
             <Policies>
                 <SizeBasedTriggeringPolicy size="10 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy min="1" max="1" fileIndex="min" />
+        </RollingRandomAccessFile>
+        <RollingRandomAccessFile name="ListenerLogFile" fileName="${sys:grid.log.dir}listener.log" immediateFlush="true" append="true" >
+            <PatternLayout pattern="${sd:patternLayout}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
             </Policies>
             <DefaultRolloverStrategy min="1" max="1" fileIndex="min" />
         </RollingRandomAccessFile>
