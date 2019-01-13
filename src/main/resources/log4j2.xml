@@ -2,19 +2,17 @@
 <Configuration monitorInterval="15" status="INFO">
     <Properties>
         <!-- empty - default value if no sys parameter is passed -->
-        <Property name="grid.log.dir">logs/</Property>
+        <Property name="log.dir">logs/</Property>
         <Property name="logFileName">ignite.log</Property>
-        <Property name="patternLayout">%d [%t] %-5level %c - [%X{tracking-tag}] %msg%n</Property>
+        <Property name="patternLayout">%d [%-40t] %msg%n</Property>
+        <!--<Property name="patternLayout">%d [%t] %-5level %c - [%X{tracking-tag}] %msg%n</Property>-->
         <Property name="mainLogRollingFilePattern">ignite.%i.log</Property>
     </Properties>
 
     <Loggers>
+        <Logger name="IgniteContinuousQueryTest" level="TRACE" />
 
-        <Logger name="IgniteContinuousQueryTest" level="INFO" additivity="false">
-            <AppenderRef ref="ListenerLogFile"/>
-        </Logger>
-
-        <Root level="INFO">
+        <Root level="OFF">
             <AppenderRef ref="MainLogFile" />
             <AppenderRef ref="Console" />
         </Root>
@@ -24,17 +22,10 @@
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="${sd:patternLayout}"/>
         </Console>
-        <RollingRandomAccessFile name="MainLogFile" fileName="${sys:grid.log.dir}${sd:logFileName}" immediateFlush="true" append="true" filePattern="${sys:grid.log.dir}${sd:mainLogRollingFilePattern}">
+        <RollingRandomAccessFile name="MainLogFile" fileName="${sys:log.dir}${sd:logFileName}" immediateFlush="true" append="true" filePattern="${sys:log.dir}${sd:mainLogRollingFilePattern}">
             <PatternLayout pattern="${sd:patternLayout}"/>
             <Policies>
                 <SizeBasedTriggeringPolicy size="10 MB"/>
-            </Policies>
-            <DefaultRolloverStrategy min="1" max="1" fileIndex="min" />
-        </RollingRandomAccessFile>
-        <RollingRandomAccessFile name="ListenerLogFile" fileName="${sys:grid.log.dir}listener.log" immediateFlush="true" append="true" >
-            <PatternLayout pattern="${sd:patternLayout}"/>
-            <Policies>
-                <SizeBasedTriggeringPolicy size="100 MB"/>
             </Policies>
             <DefaultRolloverStrategy min="1" max="1" fileIndex="min" />
         </RollingRandomAccessFile>
