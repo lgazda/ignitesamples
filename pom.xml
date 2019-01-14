@@ -31,7 +31,8 @@
     <properties>
         <log4j2.version>2.8.2</log4j2.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
-        <ignite.version>2.7.1</ignite.version>
+        <!--<ignite.version>2.7.1</ignite.version>-->
+        <ignite.version>2.1.12</ignite.version>
         <spring.version>4.3.7.RELEASE</spring.version>
     </properties>
 
