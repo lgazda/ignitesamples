@@ -17,12 +17,15 @@ import org.springframework.core.io.ClassPathResource;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
+import static java.util.concurrent.CompletableFuture.runAsync;
+import static java.util.concurrent.CompletableFuture.supplyAsync;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
@@ -34,23 +37,23 @@ public class IgniteContinuousQueryTest {
     private static final String SAMPLE_CACHE_NAME = "TestCache";
 
     @Test
-    public void startContinuousQueryWithFilterOnAllNodes_StartNodesIncrementally_LocalQueryTrue() {
+    public void startContinuousQueryWithFilterOnAllNodes_StartNodesIncrementally_LocalQueryTrue() throws ExecutionException, InterruptedException {
 
-        Ignite igniteServer1 = startIgniteServerWithLocalQuery("server1");
+        Ignite server1 = supplyAsync(() -> startIgniteServerWithLocalQuery("server1")).get();
         Ignite igniteClient = startIgniteClient();
 
         //initial cluster
-        int batchSize = 200_000;
+        int batchSize = 100_000;
 
-        CompletableFuture<Void> dataPopulation1 = CompletableFuture.runAsync(
-                () -> streamSomeDataWithIndexRange(igniteClient, 0, batchSize));
+        sleep(2_000);
+        CompletableFuture<Void> dataPopulation1 = runAsync(() -> streamSomeDataWithIndexRange(igniteClient, 0, batchSize));
 
-        Ignite igniteServer3 = startIgniteServerWithLocalQuery("server3");
-        Ignite igniteServer2 = startIgniteServerWithLocalQuery("server2");
+        Ignite server3 = supplyAsync(() -> startIgniteServerWithLocalQuery("server3")).get();
+        Ignite server2 = supplyAsync(() -> startIgniteServerWithLocalQuery("server2")).get();
 
         dataPopulation1.join();
 
-        CompletableFuture<Void> dataPopulation2 = CompletableFuture.runAsync(
+        CompletableFuture<Void> dataPopulation2 = runAsync(
                 () -> streamSomeDataWithIndexRange(igniteClient, batchSize, 2 * batchSize));
 
         dataPopulation2.join();
@@ -62,7 +65,7 @@ public class IgniteContinuousQueryTest {
             System.gc();
         }
 
-        closeIgnites(igniteClient, igniteServer1, igniteServer2, igniteServer3);
+        closeIgnites(igniteClient, server1, server2, server3);
     }
 
     private Ignite startIgniteServerWithLocalQuery(String server1) {
