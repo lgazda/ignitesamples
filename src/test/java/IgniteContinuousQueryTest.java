@@ -43,16 +43,17 @@ public class IgniteContinuousQueryTest {
         Ignite igniteClient = startIgniteClient();
 
         //initial cluster
-        int batchSize = 100_000;
+        int batchSize = 500_000;
 
         sleep(2_000);
         CompletableFuture<Void> dataPopulation1 = runAsync(() -> streamSomeDataWithIndexRange(igniteClient, 0, batchSize));
 
+        dataPopulation1.join();
+
         Ignite server3 = supplyAsync(() -> startIgniteServerWithLocalQuery("server3")).get();
         Ignite server2 = supplyAsync(() -> startIgniteServerWithLocalQuery("server2")).get();
 
-        dataPopulation1.join();
-
+        sleep(2_000);
         CompletableFuture<Void> dataPopulation2 = runAsync(
                 () -> streamSomeDataWithIndexRange(igniteClient, batchSize, 2 * batchSize));
 
