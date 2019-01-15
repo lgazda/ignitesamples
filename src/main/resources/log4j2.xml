@@ -10,9 +10,11 @@
     </Properties>
 
     <Loggers>
-        <Logger name="IgniteContinuousQueryTest" level="TRACE" />
+        <Logger name="IgniteContinuousQueryTest" level="TRACE" additivity="false">
+            <AppenderRef ref="EventLog" />
+        </Logger>
 
-        <Root level="OFF">
+        <Root level="INFO">
             <AppenderRef ref="MainLogFile" />
             <AppenderRef ref="Console" />
         </Root>
@@ -25,7 +27,14 @@
         <RollingRandomAccessFile name="MainLogFile" fileName="${sys:log.dir}${sd:logFileName}" immediateFlush="true" append="true" filePattern="${sys:log.dir}${sd:mainLogRollingFilePattern}">
             <PatternLayout pattern="${sd:patternLayout}"/>
             <Policies>
-                <SizeBasedTriggeringPolicy size="10 MB"/>
+                <SizeBasedTriggeringPolicy size="500 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy min="1" max="1" fileIndex="min" />
+        </RollingRandomAccessFile>
+        <RollingRandomAccessFile name="EventLog" fileName="${sys:log.dir}event.log" immediateFlush="true" append="true" filePattern="${sys:log.dir}event.%i.log">
+            <PatternLayout pattern="${sd:patternLayout}"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="500 MB"/>
             </Policies>
             <DefaultRolloverStrategy min="1" max="1" fileIndex="min" />
         </RollingRandomAccessFile>
